@@ -105,6 +105,10 @@ app.post('/api/turn', async (req, res) => {
   const agent = Object.values(AGENTS).find(a => a.id === agentId);
   if (!agent) return res.status(400).json({ error: 'Unknown agent' });
 
+  if (history.length === 0) {
+    console.log(`[${new Date().toLocaleTimeString()}] 🚀 NEW DEBATE: "${topic}"`);
+  }
+
   const contextMsg = history.length === 0
     ? `The topic is: "${topic}"\n\nGive your opening perspective.`
     : `The topic is: "${topic}"\n\nDebate so far:\n\n${history.map(h => `${h.agent}: ${h.text}`).join('\n\n')}\n\nNow give your response. Build on or challenge what others said.`;
