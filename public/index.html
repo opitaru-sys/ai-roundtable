@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Roundtable</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #222;
+      --border: rgba(255, 255, 255, 0.08);
+      --border2: rgba(255, 255, 255, 0.14);
+      --text: #e8e8e8;
+      --muted: #888;
+      --faint: #555;
+
+      --claude-a-bg: #1e1a2e;
+      --claude-a-border: #4a3fa0;
+      --claude-a-text: #c4bcf5;
+      --claude-a-avatar: #3d3480;
+
+      --claude-b-bg: #0f1e18;
+      --claude-b-border: #1e7a56;
+      --claude-b-text: #7dd4b0;
+      --claude-b-avatar: #145c3e;
+
+      --gemini-bg: #0e1622;
+      --gemini-border: #1e5fa0;
+      --gemini-text: #7ab4e8;
+      --gemini-avatar: #12426e;
+
+      --consensus-bg: #181818;
+      --consensus-border: rgba(255, 255, 255, 0.18);
+
+      .avatar.gaming-strategist {
+        background: #2a1a0e;
+        color: #e8a84c;
+      }
+
+      .bubble.gaming-strategist {
+        background: #1e1208;
+        border-color: #a0621a;
+        color: #e8c080;
+      }
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 6rem;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+
+    header p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .controls-label {
+      font-size: 12px;
+      color: var(--faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .pill {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+
+    .pill:hover {
+      border-color: var(--border2);
+      color: var(--text);
+    }
+
+    .pill.active {
+      background: var(--surface2);
+      border-color: var(--border2);
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    #arena {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 2rem;
+      min-height: 60px;
+    }
+
+    .system-line {
+      font-size: 12px;
+      color: var(--faint);
+      padding: 6px 0 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .system-line::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--faint);
+      flex-shrink: 0;
+    }
+
+    .msg {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      animation: fadeUp 0.25s ease;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-top: 3px;
+      letter-spacing: 0.02em;
+    }
+
+    .avatar.claude-analyst {
+      background: var(--claude-a-avatar);
+      color: var(--claude-a-text);
+    }
+
+    .avatar.claude-challenger {
+      background: var(--claude-b-avatar);
+      color: var(--claude-b-text);
+    }
+
+    .avatar.gemini {
+      background: var(--gemini-avatar);
+      color: var(--gemini-text);
+    }
+
+    .bubble {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .bubble.claude-analyst {
+      background: var(--claude-a-bg);
+      border-color: var(--claude-a-border);
+      color: var(--claude-a-text);
+    }
+
+    .bubble.claude-challenger {
+      background: var(--claude-b-bg);
+      border-color: var(--claude-b-border);
+      color: var(--claude-b-text);
+    }
+
+    .bubble.gemini {
+      background: var(--gemini-bg);
+      border-color: var(--gemini-border);
+      color: var(--gemini-text);
+    }
+
+    .bubble-meta {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.6;
+      margin-bottom: 5px;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      padding: 2px 0;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.4;
+      animation: blink 1.2s infinite;
+    }
+
+    .dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes blink {
+
+      0%,
+      80%,
+      100% {
+        opacity: 0.15;
+      }
+
+      40% {
+        opacity: 0.8;
+      }
+    }
+
+    .consensus-wrap {
+      margin-top: 8px;
+      animation: fadeUp 0.3s ease;
+    }
+
+    .consensus-label {
+      font-size: 11px;
+      color: var(--faint);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .consensus-box {
+      background: var(--consensus-bg);
+      border: 1px solid var(--consensus-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .input-section {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, var(--bg) 35%);
+      padding: 1.5rem 1rem 1.5rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .input-inner {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      gap: 8px;
+    }
+
+    textarea {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 11px 14px;
+      resize: none;
+      height: 48px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus {
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    textarea::placeholder {
+      color: var(--faint);
+    }
+
+    button#go {
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: 12px;
+      padding: 0 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+      height: 48px;
+    }
+
+    button#go:hover {
+      opacity: 0.88;
+    }
+
+    button#go:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--faint);
+      text-align: center;
+      margin-top: 8px;
+      min-height: 16px;
+    }
+
+    .header-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    button.ghost {
+      background: none;
+      border: none;
+      color: var(--faint);
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+    }
+
+    button.ghost:hover {
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <header>
+      <div class="header-actions">
+        <div>
+          <h1>AI Roundtable</h1>
+          <p>Claude Analyst · Claude Challenger · Gemini</p>
+        </div>
+        <button class="ghost" onclick="clearAll()">clear</button>
+      </div>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#4a3fa0"></div>Claude Analyst
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#1e7a56"></div>Claude Challenger
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#1e5fa0"></div>Gemini
+      </div>
+    </div>
+
+    <div class="controls">
+      <span class="controls-label">Rounds</span>
+      <button class="pill active" data-v="2" onclick="setRounds(this)">2</button>
+      <button class="pill" data-v="3" onclick="setRounds(this)">3</button>
+      <button class="pill" data-v="4" onclick="setRounds(this)">4</button>
+    </div>
+
+    <div id="arena"></div>
+    <div id="status"></div>
+  </div>
+
+  <div class="input-section">
+    <div class="input-inner">
+      <textarea id="prompt" placeholder="Ask anything — the agents will debate it..." rows="1"></textarea>
+      <button id="go" onclick="startDebate()">Debate</button>
+    </div>
+  </div>
+
+  <script>
+    let rounds = 2;
+    let running = false;
+
+    const AGENTS = [
+      { id: 'claude-analyst', name: 'Claude Analyst', label: 'CA' },
+      { id: 'claude-challenger', name: 'Claude Challenger', label: 'CC' },
+      { id: 'gaming-strategist', name: 'Gaming Strategist', label: 'GS' },
+      { id: 'gemini', name: 'Gemini', label: 'G' }
+    ];
+
+    function setRounds(el) {
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      rounds = parseInt(el.dataset.v);
+    }
+
+    function clearAll() {
+      document.getElementById('arena').innerHTML = '';
+      document.getElementById('status').textContent = '';
+    }
+
+    function addSystem(text) {
+      const el = document.createElement('div');
+      el.className = 'system-line';
+      el.textContent = text;
+      document.getElementById('arena').appendChild(el);
+    }
+
+    function addMsg(agent, text) {
+      const el = document.createElement('div');
+      el.className = 'msg';
+      el.innerHTML = `
+      <div class="avatar ${agent.id}">${agent.label}</div>
+      <div class="bubble ${agent.id}">
+        <div class="bubble-meta">${agent.name}</div>
+        ${escHtml(text)}
+      </div>`;
+      document.getElementById('arena').appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function addTyping(agent) {
+      const el = document.createElement('div');
+      el.className = 'msg';
+      el.id = 'typing';
+      el.innerHTML = `
+      <div class="avatar ${agent.id}">${agent.label}</div>
+      <div class="bubble ${agent.id}">
+        <div class="bubble-meta">${agent.name}</div>
+        <div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>`;
+      document.getElementById('arena').appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function removeTyping() {
+      const t = document.getElementById('typing');
+      if (t) t.remove();
+    }
+
+    function setStatus(t) { document.getElementById('status').textContent = t; }
+
+    function escHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    async function post(path, body) {
+      const r = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      return r.json();
+    }
+
+    const DELAY_MS = 4000; // delay between agent calls to avoid rate limits
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    async function startDebate() {
+      if (running) return;
+      const topic = document.getElementById('prompt').value.trim();
+      if (!topic) return;
+      running = true;
+      document.getElementById('go').disabled = true;
+      document.getElementById('prompt').value = '';
+
+      addSystem(`"${topic}"`);
+
+      // history holds the full context passed to each agent.
+      // After each round (except the last), round messages are replaced
+      // with a compressed summary to keep token counts low.
+      let history = [];
+
+      for (let r = 0; r < rounds; r++) {
+        addSystem(`Round ${r + 1}`);
+        const roundStartIndex = history.length; // marks where this round's messages begin
+
+        for (let i = 0; i < AGENTS.length; i++) {
+          const agent = AGENTS[i];
+
+          // 4-second delay between agents (skip before the very first call)
+          if (r > 0 || i > 0) {
+            setStatus(`Waiting a moment before ${agent.name}...`);
+            await sleep(DELAY_MS);
+          }
+
+          setStatus(`${agent.name} is thinking...`);
+          addTyping(agent);
+          const data = await post('/api/turn', { agentId: agent.id, topic, history });
+          removeTyping();
+          const reply = data.reply || data.error || 'No response';
+          addMsg(agent, reply);
+          history.push({ agent: agent.name, text: reply });
+        }
+
+        // After each completed round except the last, compress it into a summary
+        const isLastRound = r === rounds - 1;
+        if (!isLastRound) {
+          setStatus(`Summarizing Round ${r + 1}...`);
+          const roundMessages = history.slice(roundStartIndex);
+          const sumData = await post('/api/summarize', {
+            topic,
+            roundNumber: r + 1,
+            messages: roundMessages
+          });
+          const summary = sumData.summary || `[Round ${r + 1} summary unavailable]`;
+
+          // Replace the round's raw messages with one compressed entry
+          history = [
+            ...history.slice(0, roundStartIndex),
+            { agent: `[Round ${r + 1} Summary]`, text: summary }
+          ];
+        }
+      }
+
+      setStatus('Synthesizing...');
+      addSystem('Consensus');
+      const data = await post('/api/synthesize', { topic, history });
+      removeTyping();
+
+      const wrap = document.createElement('div');
+      wrap.className = 'consensus-wrap';
+      wrap.innerHTML = `<div class="consensus-label">Synthesis</div><div class="consensus-box">${escHtml(data.synthesis || data.error || '')}</div>`;
+      document.getElementById('arena').appendChild(wrap);
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      setStatus('');
+      running = false;
+      document.getElementById('go').disabled = false;
+    }
+
+    document.getElementById('prompt').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); startDebate(); }
+    });
+  </script>
+</body>
+
+</html>
