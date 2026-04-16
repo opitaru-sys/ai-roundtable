@@ -462,6 +462,7 @@
   <script>
     let rounds = 2;
     let running = false;
+    let history = []; // Persists across multiple questions
 
     const AGENTS = [
       { id: 'claude-analyst', name: 'Claude Analyst', label: 'CA' },
@@ -479,6 +480,7 @@
     function clearAll() {
       document.getElementById('arena').innerHTML = '';
       document.getElementById('status').textContent = '';
+      history = []; // Reset memory for a fresh start
     }
 
     function addSystem(text) {
@@ -549,10 +551,11 @@
 
       addSystem(`"${topic}"`);
 
-      // history holds the full context passed to each agent.
-      // After each round (except the last), round messages are replaced
-      // with a compressed summary to keep token counts low.
-      let history = [];
+      // If we already have history, log the new question as a User message 
+      // so the agents know the topic has pivoted or drilled down.
+      if (history.length > 0) {
+        history.push({ agent: 'User', text: `New Follow-up Question/Topic: ${topic}` });
+      }
 
       for (let r = 0; r < rounds; r++) {
         addSystem(`Round ${r + 1}`);
