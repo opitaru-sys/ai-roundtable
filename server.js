@@ -105,8 +105,11 @@ app.post('/api/turn', async (req, res) => {
   const agent = Object.values(AGENTS).find(a => a.id === agentId);
   if (!agent) return res.status(400).json({ error: 'Unknown agent' });
 
-  if (history.length === 0) {
-    console.log(`[${new Date().toLocaleTimeString()}] 🚀 NEW DEBATE: "${topic}"`);
+  const isFirstTurn = history.length === 0 || history[history.length - 1]?.agent === 'User';
+  if (isFirstTurn) {
+    const cleanTopic = topic.replace(/\n/g, ' '); // Keep log on a single line
+    const label = history.length === 0 ? '🚀 NEW DEBATE' : '➡️ FOLLOW-UP';
+    console.log(`[${new Date().toLocaleTimeString()}] ${label}: "${cleanTopic}"`);
   }
 
   const contextMsg = history.length === 0
