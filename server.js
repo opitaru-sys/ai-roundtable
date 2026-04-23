@@ -10,20 +10,6 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const app = express();
 app.use(express.json());
 
-// ─── Basic Authentication ──────────────────────────────────────────────────
-const USERNAME = process.env.APP_USERNAME || 'friend';
-const PASSWORD = process.env.APP_PASSWORD || 'debate123';
-
-app.use((req, res, next) => {
-  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
-  const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
-  if (login && password && login === USERNAME && password === PASSWORD) {
-    return next();
-  }
-  res.set('WWW-Authenticate', 'Basic realm="AI Roundtable"');
-  res.status(401).send('Authentication required.');
-});
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
@@ -84,17 +70,31 @@ async function callClaude(persona, userMessage) {
 
 async function callGemini(persona, userMessage) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: persona }] },
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }]
-    })
-  });
-  const data = await resp.json();
-  if (!data.candidates) throw new Error(data.error?.message || 'Gemini API error');
-  return data.candidates[0].content.parts.map(p => p.text || '').join('');
+  const MAX_RETRIES = 4;
+  let delay = 5000;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: persona }] },
+        contents: [{ role: 'user', parts: [{ text: userMessage }] }]
+      })
+    });
+
+    if (resp.status === 429) {
+      if (attempt === MAX_RETRIES) throw new Error('Gemini rate limit exceeded — please wait a moment and try again');
+      console.warn(`[Gemini] 429 rate limit — retrying in ${delay / 1000}s (attempt ${attempt}/${MAX_RETRIES})`);
+      await sleep(delay);
+      delay *= 2;
+      continue;
+    }
+
+    const data = await resp.json();
+    if (!data.candidates) throw new Error(data.error?.message || 'Gemini API error');
+    return data.candidates[0].content.parts.map(p => p.text || '').join('');
+  }
 }
 
 // ─── Route: single agent turn ─────────────────────────────────────────────────
