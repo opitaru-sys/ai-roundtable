@@ -71,7 +71,7 @@ async function callClaude(persona, userMessage) {
 async function callGemini(persona, userMessage) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
   const MAX_RETRIES = 4;
-  let delay = 5000;
+  let delay = 30000; // 30 s default — clears Gemini's 60 s RPM window on first retry
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const resp = await fetch(url, {
@@ -85,9 +85,12 @@ async function callGemini(persona, userMessage) {
 
     if (resp.status === 429) {
       if (attempt === MAX_RETRIES) throw new Error('Gemini rate limit exceeded — please wait a moment and try again');
-      console.warn(`[Gemini] 429 rate limit — retrying in ${delay / 1000}s (attempt ${attempt}/${MAX_RETRIES})`);
-      await sleep(delay);
-      delay *= 2;
+      // Honour the server's own retry hint if provided; otherwise use our backoff
+      const retryAfterSec = parseInt(resp.headers.get('retry-after') || '0', 10);
+      const waitMs = retryAfterSec > 0 ? retryAfterSec * 1000 : delay;
+      console.warn(`[Gemini] 429 rate limit — retrying in ${waitMs / 1000}s (attempt ${attempt}/${MAX_RETRIES})`);
+      await sleep(waitMs);
+      delay = Math.min(delay * 2, 120000); // cap backoff at 2 min
       continue;
     }
 
