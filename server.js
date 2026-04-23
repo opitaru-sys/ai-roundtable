@@ -69,7 +69,7 @@ async function callClaude(persona, userMessage) {
 // ─── Gemini API call ──────────────────────────────────────────────────────────
 
 async function callGemini(persona, userMessage) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${GEMINI_KEY}`;
   const MAX_RETRIES = 4;
   let delay = 30000; // 30 s default — clears Gemini's 60 s RPM window on first retry
 
